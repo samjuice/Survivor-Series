@@ -1,3 +1,7 @@
 import { defineConfig } from "vitest/config";
 import path from "node:path";
-export default defineConfig({ resolve: { alias: { "@": path.resolve(__dirname, "src") } }, test: { environment: "jsdom" } });
+export default defineConfig({
+  define: { __BUILD__: JSON.stringify("test") },
+  resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
+  test: { environment: "jsdom" },
+});
