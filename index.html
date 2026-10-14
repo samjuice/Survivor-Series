@@ -9,5 +9,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Oswald:wght@500;700&display=swap" rel="stylesheet" />
     <title>The Padel Series: Survivor</title>
   </head>
-  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
+  <body><div id="root"><div id="splash" style="min-height:100vh;display:grid;place-items:center;text-align:center;color:#e8dcc0;font-family:system-ui,sans-serif;padding:24px"><div><div style="color:#c9a227;letter-spacing:.3em;font-size:12px;text-transform:uppercase">The Padel Series</div><div style="font-size:40px;font-weight:700;margin:8px 0">Survivor</div><div id="splash-msg" style="opacity:.6;font-size:14px">Loading…</div></div></div></div>
+    <script>
+      (function () {
+        function show(msg) {
+          var el = document.getElementById("splash-msg");
+          if (el) { el.style.color = "#e8a0a0"; el.style.opacity = "1"; el.textContent = "Startup problem: " + msg; }
+        }
+        window.addEventListener("error", function (e) {
+          var t = e.target;
+          show(t && t.src ? "could not load " + t.src.split("/").pop() : (e.message || "unknown error"));
+        }, true);
+        window.addEventListener("unhandledrejection", function (e) { show(String(e.reason && e.reason.message || e.reason)); });
+      })();
+    </script><script type="module" src="/src/main.tsx"></script></body>
 </html>

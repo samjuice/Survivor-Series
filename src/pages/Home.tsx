@@ -8,6 +8,7 @@ export default function Home() {
         <h1 className="text-6xl sm:text-8xl font-bold text-parchment mt-3">Survivor</h1>
         <p className="mt-4 text-sand/70">Outwit. Outplay. Outrally.</p>
         {!isConfigured && <p className="mt-8 text-xs text-olive">Backend not connected yet.</p>}
+        <p className="mt-10 text-[10px] text-sand/30">build {__BUILD__}</p>
       </div>
     </main>
   );

@@ -4,6 +4,7 @@ import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 
 export default defineConfig({
+  define: { __BUILD__: JSON.stringify((process.env.GITHUB_SHA ?? "local").slice(0, 7) + " " + new Date().toISOString().slice(0, 16).replace("T", " ") + "Z") },
   resolve: { alias: { "@": path.resolve(__dirname, "src") } },
   plugins: [
     react(),
@@ -20,6 +21,7 @@ export default defineConfig({
         icons: [{ src: "icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any maskable" }],
       },
       workbox: {
+        cleanupOutdatedCaches: true, skipWaiting: true, clientsClaim: true,
         navigateFallback: "/index.html",
         runtimeCaching: [
           // Never cache Supabase traffic
