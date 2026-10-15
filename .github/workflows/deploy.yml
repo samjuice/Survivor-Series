@@ -44,13 +44,18 @@ jobs:
           anon=$(q "select coalesce(string_agg(table_name||':'||privilege_type, ','), 'none') from information_schema.role_table_grants where grantee='anon' and table_schema='public'")
           extras=$(q "select count(*) from information_schema.role_table_grants where grantee in ('anon','authenticated') and table_schema='public' and privilege_type in ('TRUNCATE','REFERENCES','TRIGGER')")
           anonfn=$(q "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and has_function_privilege('anon', p.oid, 'execute')")
-          rpcs=$(q "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('submit_result','review_result','record_walkover','withdraw_team','generate_fixtures','replace_team_player','prize_pool_cents')")
+          fns="submit_result review_result record_walkover withdraw_team generate_fixtures replace_team_player prize_pool_cents my_roles has_registration list_users set_user_status delete_user list_competition_admins add_competition_admin remove_competition_admin link_placeholder assign_tribes randomize_captains set_lineup lock_lineups regenerate_fixtures create_americano score_americano_match set_americano_status delete_americano cast_vote award_tally set_award_winner publish_awards"
+          want=$(echo $fns | wc -w)
+          list=$(echo $fns | sed "s/ /','/g")
+          rpcs=$(q "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('$list')")
+          authcols=$(q "select count(*) from information_schema.columns where (table_schema='auth' and table_name='users' and column_name in ('email','banned_until','encrypted_password','raw_user_meta_data','email_confirmed_at')) or (table_schema='auth' and table_name='identities' and column_name='user_id')")
           applied=$(q "select string_agg(name, ',' order by name) from ci.applied_migrations")
-          msg="public tables: $tables | without RLS: $norls | anon grants: $anon | extra table privs: $extras | anon functions: $anonfn | RPCs: $rpcs | applied: $applied"
+          msg="public tables: $tables | without RLS: $norls | anon grants: $anon | extra table privs: $extras | anon functions: $anonfn | RPCs: $rpcs/$want | auth columns: $authcols/6 | applied: $applied"
           echo "$msg"
           echo "::notice title=Live database check::$msg"
           [ "$norls" = "0" ] || { echo "::error title=Live database check::a public table has RLS off"; exit 1; }
-          [ "$rpcs" = "7" ] || { echo "::error title=Live database check::expected 7 RPCs, found $rpcs"; exit 1; }
+          [ "$rpcs" = "$want" ] || { echo "::error title=Live database check::expected $want functions, found $rpcs"; exit 1; }
+          [ "$authcols" = "6" ] || { echo "::error title=Live database check::auth columns needed by user management are missing ($authcols/6)"; exit 1; }
           [ "$extras" = "0" ] || { echo "::error title=Live database check::API roles hold TRUNCATE/REFERENCES/TRIGGER ($extras)"; exit 1; }
           [ "$anonfn" = "0" ] || { echo "::error title=Live database check::anon can execute $anonfn functions"; exit 1; }
           [ "$anon" = "competitions:SELECT" ] || { echo "::error title=Live database check::unexpected anon grants: $anon"; exit 1; }

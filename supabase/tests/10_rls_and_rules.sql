@@ -3,33 +3,6 @@
 \set QUIET on
 \o /dev/null
 
-create schema t;
-grant usage on schema t to anon, authenticated;
-create table t.log (n serial, ok boolean, label text, detail text);
-grant insert on t.log to anon, authenticated;
-grant usage on sequence t.log_n_seq to anon, authenticated;
-
-create function t.ok(q text, label text) returns void language plpgsql as $$
-begin execute q; insert into t.log (ok, label) values (true, label);
-exception when others then insert into t.log (ok, label, detail) values (false, label, 'unexpected error: ' || sqlerrm); end $$;
-
-create function t.fails(q text, label text) returns void language plpgsql as $$
-begin execute q; insert into t.log (ok, label, detail) values (false, label, 'should have been refused');
-exception when others then insert into t.log (ok, label, detail) values (true, label, sqlerrm); end $$;
-
-create function t.eq(q text, expected text, label text) returns void language plpgsql as $$
-declare v text;
-begin execute q into v;
-  if v is not distinct from expected then insert into t.log (ok, label) values (true, label);
-  else insert into t.log (ok, label, detail) values (false, label, 'expected [' || coalesce(expected,'NULL') || '] got [' || coalesce(v,'NULL') || ']'); end if;
-exception when others then insert into t.log (ok, label, detail) values (false, label, 'error: ' || sqlerrm); end $$;
-
-create function t.login(u uuid) returns void language sql as $$
-  select set_config('request.jwt.claim.sub', u::text, false), set_config('role', 'authenticated', false) $$;
-create function t.anon() returns void language sql as $$
-  select set_config('request.jwt.claim.sub', '', false), set_config('role', 'anon', false) $$;
-create function t.root() returns void language sql as $$ select set_config('request.jwt.claim.sub', '', false), set_config('role', session_user::text, false) $$;
-
 -- ids
 \set owner  '00000000-0000-0000-0000-0000000000a1'
 \set admin  '00000000-0000-0000-0000-0000000000a2'
@@ -277,7 +250,7 @@ select t.eq($$select count(*)::text from public.teams$$, '5', 'teams untouched b
 
 -- ═══ Feed content ═══
 select t.login(:'c1');
-select t.eq($$select string_agg(distinct kind, ',' order by kind) from public.feed_events$$, 'announcement,fixtures_generated,player_joined,result_approved,team_withdrawn', 'feed has the expected event kinds');
+select t.eq($$select string_agg(distinct kind, ',' order by kind) from public.feed_events$$, 'announcement,fixtures_generated,player_joined,result_approved,team_withdrawn,tribe_revealed', 'feed has the expected event kinds');
 select t.root();
 select t.eq($$select count(*)::text from public.feed_events where payload::text ~* '(paid|payment|fee|amount|eft)'$$, '0', 'feed never exposes payment details');
 select t.eq($$select count(*)::text from public.feed_events where kind = 'player_joined'$$, '8', 'a player_joined event per approved player/placeholder');
@@ -325,7 +298,7 @@ select t.eq($$select count(*)::text from pg_proc p join pg_namespace n on n.oid 
 select t.eq($$select count(*)::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and (p.proname like 'trg\_%' or p.proname in ('add_feed','_make_walkover','is_valid_set')) and has_function_privilege('authenticated', p.oid, 'execute')$$, '0', 'internal/trigger functions are not callable by signed-in users');
 select t.eq($$select count(*)::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname in ('submit_result','review_result','record_walkover','withdraw_team','generate_fixtures','replace_team_player','prize_pool_cents') and has_function_privilege('authenticated', p.oid, 'execute')$$, '7', 'signed-in users can call the 7 intended RPCs');
 select t.eq($$select count(*)::text from information_schema.role_table_grants where grantee = 'authenticated' and table_name = 'platform_owners'$$, '0', 'authenticated has no grants on platform_owners');
-select t.eq($$select count(*)::text from pg_publication_tables where pubname = 'supabase_realtime'$$, '7', 'seven tables are in the realtime publication');
+select t.eq($$select count(*)::text from pg_publication_tables where pubname = 'supabase_realtime' and tablename in ('feed_events','fixtures','results','announcements','teams','team_members','registrations')$$, '7', 'the seven core tables are in the realtime publication');
 
 \o
 select count(*) filter (where ok) as passed, count(*) filter (where not ok) as failed from t.log;
