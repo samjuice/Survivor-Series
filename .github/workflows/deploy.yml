@@ -44,8 +44,12 @@ jobs:
           anon=$(q "select coalesce(string_agg(table_name||':'||privilege_type, ','), 'none') from information_schema.role_table_grants where grantee='anon' and table_schema='public'")
           rpcs=$(q "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('submit_result','review_result','record_walkover','withdraw_team','generate_fixtures','replace_team_player','prize_pool_cents')")
           applied=$(q "select string_agg(name, ',' order by name) from ci.applied_migrations")
-          echo "public tables: $tables | tables without RLS: $norls | anon grants: $anon | RPCs: $rpcs | applied: $applied"
-          [ "$norls" = "0" ] && [ "$rpcs" = "7" ] && [ "$anon" = "competitions:SELECT" ]
+          msg="public tables: $tables | without RLS: $norls | anon grants: $anon | RPCs: $rpcs | applied: $applied"
+          echo "$msg"
+          echo "::notice title=Live database check::$msg"
+          [ "$norls" = "0" ] || { echo "::error title=Live database check::a public table has RLS off"; exit 1; }
+          [ "$rpcs" = "7" ] || { echo "::error title=Live database check::expected 7 RPCs, found $rpcs"; exit 1; }
+          [ "$anon" = "competitions:SELECT" ] || { echo "::error title=Live database check::unexpected anon grants: $anon"; exit 1; }
       - run: npm run build
       - name: Deploy
         if: ${{ env.FIREBASE_TOKEN != '' }}
