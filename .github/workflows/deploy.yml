@@ -1,13 +1,21 @@
-name: Deploy to Firebase Hosting
+name: Test, migrate, deploy
 on:
   push: { branches: [main] }
   workflow_dispatch:
-concurrency: { group: deploy, cancel-in-progress: true }
+concurrency: { group: deploy, cancel-in-progress: false }
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
       PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || 'padel-survivor' }}
     steps:
       - uses: actions/checkout@v4
@@ -17,6 +25,27 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - name: Database tests (throwaway local Postgres)
+        env: { PGHOST: localhost, PGUSER: postgres, PGPASSWORD: postgres }
+        run: ./scripts/test-db.sh
+      - name: Apply database migrations to Supabase
+        if: ${{ env.SUPABASE_DB_URL != '' }}
+        env:
+          DB_URL: ${{ env.SUPABASE_DB_URL }}
+          EXPECTED_PROJECT_REF: ypwjoomizjxadrwifzrt
+        run: ./scripts/migrate.sh
+      - name: Verify live database
+        if: ${{ env.SUPABASE_DB_URL != '' }}
+        run: |
+          set -euo pipefail
+          q() { psql "$SUPABASE_DB_URL" -Atq -v ON_ERROR_STOP=1 -c "$1"; }
+          tables=$(q "select count(*) from pg_tables where schemaname='public'")
+          norls=$(q "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and not c.relrowsecurity")
+          anon=$(q "select coalesce(string_agg(table_name||':'||privilege_type, ','), 'none') from information_schema.role_table_grants where grantee='anon' and table_schema='public'")
+          rpcs=$(q "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('submit_result','review_result','record_walkover','withdraw_team','generate_fixtures','replace_team_player','prize_pool_cents')")
+          applied=$(q "select string_agg(name, ',' order by name) from ci.applied_migrations")
+          echo "public tables: $tables | tables without RLS: $norls | anon grants: $anon | RPCs: $rpcs | applied: $applied"
+          [ "$norls" = "0" ] && [ "$rpcs" = "7" ] && [ "$anon" = "competitions:SELECT" ]
       - run: npm run build
       - name: Deploy
         if: ${{ env.FIREBASE_TOKEN != '' }}
