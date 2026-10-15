@@ -297,6 +297,26 @@ begin
 end $$;
 select t.fails($$select t.two_set_result()$$, 'db guard: a 2-set result cannot be committed');
 
+-- ═══ Payment instructions & roles ═══
+select t.login(:'admin');
+select t.ok(format($$insert into public.payment_info (competition_id, instructions) values (%L, 'EFT to Sam, ref: your name')$$, :'comp'), 'admin can set payment instructions');
+select t.login(:'c1');
+select t.eq($$select count(*)::text from public.payment_info$$, '1', 'a registered player can read payment instructions');
+select t.ok(format($$update public.payment_info set instructions = 'hacked' where competition_id = %L$$, :'comp'), 'player update of payment instructions is silently filtered');
+select t.eq($$select instructions from public.payment_info$$, 'EFT to Sam, ref: your name', 'payment instructions unchanged after a player attempt');
+select t.login(:'e1');
+select t.eq($$select count(*)::text from public.payment_info$$, '0', 'a stranger cannot read payment instructions');
+select t.anon();
+select t.fails($$select * from public.payment_info$$, 'anon cannot read payment instructions');
+select t.fails($$select public.my_roles()$$, 'anon cannot call my_roles');
+select t.login(:'owner');
+select t.eq($$select (public.my_roles() ->> 'is_owner')$$, 'true', 'my_roles reports the platform owner');
+select t.login(:'admin');
+select t.eq($$select (public.my_roles() ->> 'is_owner') || '/' || jsonb_array_length(public.my_roles() -> 'admin_of')$$, 'false/1', 'my_roles reports competition admin');
+select t.login(:'p1');
+select t.eq($$select (public.my_roles() ->> 'is_owner') || '/' || jsonb_array_length(public.my_roles() -> 'admin_of')$$, 'false/0', 'my_roles reports a plain player');
+select t.root();
+
 -- ═══ Structure checks ═══
 select t.eq($$select count(*)::text from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity$$, '0', 'RLS is enabled on every public table');
 select t.eq($$select string_agg(table_name || ':' || privilege_type, ',' order by table_name) from information_schema.role_table_grants where grantee = 'anon' and table_schema = 'public'$$, 'competitions:SELECT', 'anon holds only SELECT on competitions');

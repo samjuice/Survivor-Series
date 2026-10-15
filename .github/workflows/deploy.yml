@@ -54,6 +54,9 @@ jobs:
           [ "$extras" = "0" ] || { echo "::error title=Live database check::API roles hold TRUNCATE/REFERENCES/TRIGGER ($extras)"; exit 1; }
           [ "$anonfn" = "0" ] || { echo "::error title=Live database check::anon can execute $anonfn functions"; exit 1; }
           [ "$anon" = "competitions:SELECT" ] || { echo "::error title=Live database check::unexpected anon grants: $anon"; exit 1; }
+      - name: Live API check (anonymous visitor must be refused)
+        if: ${{ env.SUPABASE_DB_URL != '' }}
+        run: ./scripts/live-smoke.sh
       - run: npm run build
       - name: Deploy
         if: ${{ env.FIREBASE_TOKEN != '' }}

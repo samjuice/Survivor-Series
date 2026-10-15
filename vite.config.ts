@@ -6,6 +6,7 @@ import path from "node:path";
 export default defineConfig({
   define: { __BUILD__: JSON.stringify((process.env.GITHUB_SHA ?? "local").slice(0, 7) + " " + new Date().toISOString().slice(0, 16).replace("T", " ") + "Z") },
   resolve: { alias: { "@": path.resolve(__dirname, "src") } },
+  build: { rollupOptions: { output: { manualChunks(id: string) { if (id.includes("@supabase")) return "supabase"; if (id.includes("@tanstack")) return "query"; if (id.includes("react-router") || id.includes("/react-dom/") || id.includes("/react/") || id.includes("scheduler")) return "react"; return undefined; } } } },
   plugins: [
     react(),
     VitePWA({
@@ -18,7 +19,12 @@ export default defineConfig({
         background_color: "#0e1410",
         display: "standalone",
         start_url: "/",
-        icons: [{ src: "icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any maskable" }],
+        icons: [
+          { src: "icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+          { src: "icon.svg", sizes: "any", type: "image/svg+xml" },
+        ],
       },
       workbox: {
         cleanupOutdatedCaches: true, skipWaiting: true, clientsClaim: true,

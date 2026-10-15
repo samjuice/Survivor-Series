@@ -1,0 +1,16 @@
+name: Bootstrap platform owner (one-time)
+on:
+  workflow_dispatch:
+    inputs:
+      email: { description: "Email of the confirmed account that becomes platform owner", required: true }
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set platform owner
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          OWNER_EMAIL: ${{ inputs.email }}
+          EXPECTED_PROJECT_REF: ypwjoomizjxadrwifzrt
+        run: ./scripts/bootstrap-owner.sh
