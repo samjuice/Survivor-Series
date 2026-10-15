@@ -14,3 +14,6 @@ grant execute on function auth.uid() to anon, authenticated, service_role;
 grant usage on schema public to anon, authenticated, service_role;
 alter default privileges in schema public revoke all on tables from anon, authenticated, service_role; -- mimic "do not expose new tables"
 create publication supabase_realtime;
+-- Supabase also hands out these defaults; our hardening migration must remove them.
+alter default privileges in schema public grant truncate, references, trigger on tables to anon, authenticated;
+alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
