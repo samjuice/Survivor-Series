@@ -28,7 +28,7 @@ create function t.login(u uuid) returns void language sql as $$
   select set_config('request.jwt.claim.sub', u::text, false), set_config('role', 'authenticated', false) $$;
 create function t.anon() returns void language sql as $$
   select set_config('request.jwt.claim.sub', '', false), set_config('role', 'anon', false) $$;
-create function t.root() returns void language sql as $$ select set_config('request.jwt.claim.sub', '', false), set_config('role', 'root', false) $$;
+create function t.root() returns void language sql as $$ select set_config('request.jwt.claim.sub', '', false), set_config('role', session_user::text, false) $$;
 
 -- ids
 \set owner  '00000000-0000-0000-0000-0000000000a1'
