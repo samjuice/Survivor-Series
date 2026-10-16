@@ -62,6 +62,18 @@ jobs:
       - name: Live API check (anonymous visitor must be refused)
         if: ${{ env.SUPABASE_DB_URL != '' }}
         run: ./scripts/live-smoke.sh
+      - name: Live end-to-end check (real sign-in, throwaway data, cleaned up)
+        if: ${{ env.SUPABASE_DB_URL != '' }}
+        continue-on-error: true
+        env:
+          DB_URL: ${{ env.SUPABASE_DB_URL }}
+        run: |
+          set +e
+          ./scripts/live-e2e.sh | tee /tmp/e2e.txt
+          code=${PIPESTATUS[0]}
+          summary=$(grep -E '^---- e2e|^FAIL|^cleanup' /tmp/e2e.txt | tr '\n' ' ' | head -c 1500)
+          if [ $code -eq 0 ]; then echo "::notice title=Live E2E::$summary"; else echo "::warning title=Live E2E::$summary"; fi
+          exit $code
       - run: npm run build
       - name: Deploy
         if: ${{ env.FIREBASE_TOKEN != '' }}

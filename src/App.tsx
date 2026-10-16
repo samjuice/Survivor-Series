@@ -21,9 +21,17 @@ const AdminRegistrations = lazy(() => import("@/pages/admin/Registrations"));
 const AdminTribes = lazy(() => import("@/pages/admin/Tribes"));
 const AdminFixtures = lazy(() => import("@/pages/admin/Fixtures"));
 const AdminResults = lazy(() => import("@/pages/admin/Results"));
+const AdminAmericano = lazy(() => import("@/pages/admin/Americano"));
+const AdminAwards = lazy(() => import("@/pages/admin/Awards"));
+const AdminUsers = lazy(() => import("@/pages/admin/Users"));
+const AdminAudit = lazy(() => import("@/pages/admin/Audit"));
+const AdminExports = lazy(() => import("@/pages/admin/Exports"));
 const AdminAnnouncements = lazy(() => import("@/pages/admin/Announcements"));
 const AdminSettings = lazy(() => import("@/pages/admin/Settings"));
 const AdminCompetitions = lazy(() => import("@/pages/admin/Competitions"));
+const RevealPage = lazy(() => import("@/pages/Reveal"));
+const AmericanoPage = lazy(() => import("@/pages/Americano"));
+const AwardsPage = lazy(() => import("@/pages/Awards"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 function Gate() {
@@ -50,6 +58,9 @@ export default function App() {
           <Route path="/fixtures" element={<FixturesPage />} />
           <Route path="/match/:id" element={<MatchPage />} />
           <Route path="/tribes" element={<TribesPage />} />
+          <Route path="/reveal" element={<RevealPage />} />
+          <Route path="/americano" element={<AmericanoPage />} />
+          <Route path="/awards" element={<AwardsPage />} />
           <Route path="/me" element={<MePage />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminOverview />} />
@@ -57,7 +68,12 @@ export default function App() {
             <Route path="tribes" element={<AdminTribes />} />
             <Route path="fixtures" element={<AdminFixtures />} />
             <Route path="results" element={<AdminResults />} />
+            <Route path="americano" element={<AdminAmericano />} />
+            <Route path="awards" element={<AdminAwards />} />
             <Route path="announcements" element={<AdminAnnouncements />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="audit" element={<AdminAudit />} />
+            <Route path="exports" element={<AdminExports />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="competitions" element={<AdminCompetitions />} />
           </Route>

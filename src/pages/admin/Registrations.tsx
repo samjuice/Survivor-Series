@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useComp } from "@/lib/comp";
-import { regName, useAction, useProfiles, useRegistrations } from "@/lib/data";
+import { regName, useAction, useMembers, useProfiles, useRegistrations } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
 import { fmtShortDate } from "@/lib/format";
 import { Banner, Button, Empty, ErrorState, Field, Loading, Modal, Pill, inputCls } from "@/components/ui";
@@ -12,7 +12,8 @@ export default function Registrations() {
   const { comp } = useComp(); const cid = comp?.id; const { run, busy } = useAction(cid);
   const regs = useRegistrations(cid);
   const ids = useMemo(() => [...new Set((regs.data ?? []).map((r) => r.user_id).filter((x): x is string => !!x))], [regs.data]);
-  const profiles = useProfiles(cid, ids);
+  const profiles = useProfiles(cid, ids); const members = useMembers(cid);
+  const [linking, setLinking] = useState<string | null>(null); const [linkTo, setLinkTo] = useState("");
   const [filter, setFilter] = useState<RegStatus | "all">("pending"); const [q, setQ] = useState(""); const [limit, setLimit] = useState(25);
   const [adding, setAdding] = useState(false); const [pname, setPname] = useState(""); const [ppaid, setPpaid] = useState(true);
   if (!comp) return <Empty title="No competition yet" />;
@@ -41,11 +42,17 @@ export default function Registrations() {
                 {r.status !== "approved" && <Button busy={busy === r.id + "approved"} reason={full ? "Competition is full." : undefined} onClick={() => setStatus(r.id, "approved", "Approved.")}>Approve</Button>}
                 {r.status === "pending" && <Button variant="ghost" busy={busy === r.id + "waitlisted"} onClick={() => setStatus(r.id, "waitlisted", "Moved to the waitlist.")}>Waitlist</Button>}
                 {(r.status === "pending" || r.status === "waitlisted") && <Button variant="ghost" busy={busy === r.id + "rejected"} onClick={() => setStatus(r.id, "rejected", "Rejected.")}>Reject</Button>}
+                {!r.user_id && <Button variant="ghost" onClick={() => { setLinking(r.id); setLinkTo(""); }}>Link to a signed-up player</Button>}
                 <Button variant="ghost" busy={busy === r.id + "pay"} onClick={() => setPaid(r.id, r.payment_status !== "paid")}>{r.payment_status === "paid" ? "Mark as not paid" : "Confirm payment"}</Button>
               </div>
             </li>))}
         </ul>)}
       {shown.length > limit && <Button variant="ghost" onClick={() => setLimit((l) => l + 25)}>Show 25 more</Button>}
+      <Modal open={!!linking} onClose={() => setLinking(null)} title="Link to a signed-up player">
+        <p className="mb-3 text-sm text-sand/90">The placeholder keeps their slot, their paid entry fee and their tribe place. The player's own sign-up is merged into it.</p>
+        <Field label="Player">{(id) => <select id={id} className={inputCls} value={linkTo} onChange={(e) => setLinkTo(e.target.value)}><option value="">Choose a player...</option>{all.filter((x) => x.user_id && !x.user_id.startsWith("00000000") && !(members.data ?? []).some((m) => m.registration_id === x.id && !m.left_at) && x.status !== "withdrawn" && x.status !== "rejected").map((x) => <option key={x.id} value={x.id}>{regName(x, profiles.data)} ({x.status})</option>)}</select>}</Field>
+        <div className="mt-5 flex justify-end gap-2"><Button variant="quiet" onClick={() => setLinking(null)}>Cancel</Button><Button busy={busy === "link"} reason={!linkTo ? "Choose a player." : undefined} onClick={async () => { if (await run("link", () => supabase.rpc("link_placeholder", { p_placeholder: linking, p_registration: linkTo }), "Linked. The player now holds the placeholder's slot.")) setLinking(null); }}>Link player</Button></div>
+      </Modal>
       <Modal open={adding} onClose={() => setAdding(false)} title="Add a placeholder">
         <p className="mb-3 text-sm text-sand/90">Use this for someone who paid but hasn't signed up. Their name holds a slot and counts in the prize pool. Replace them later from the Tribes page and the fee carries over.</p>
         <div className="space-y-3"><Field label="Name">{(id) => <input id={id} className={inputCls} value={pname} onChange={(e) => setPname(e.target.value)} />}</Field>

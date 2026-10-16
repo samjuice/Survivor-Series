@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { useToast } from "@/components/ui";
-import type { Announcement, FeedEvent, Fixture, MatchResult, Registration, RosterRow, StandingRow, Team, TeamMember, Profile } from "@/types";
+import type { Announcement, AdminUser, Appearance, AmericanoEvent, AmericanoMatch, AmericanoRow, AuditRow, Award, AwardWinner, FeedEvent, Fixture, Lineup, MatchResult, Nominee, Prefs, Registration, RosterRow, StandingRow, Team, TeamMember, Profile } from "@/types";
 
 // Every competition-scoped query lives under ["c", competitionId, ...] so realtime can refresh them all at once.
 function useC<T>(cid: string | undefined, name: string, fn: () => PromiseLike<{ data: unknown; error: { message: string } | null }>, enabled = true) {
@@ -45,6 +45,28 @@ export const useProfiles = (cid: string | undefined, ids: string[], enabled = tr
   useQuery({
     queryKey: ["c", cid, "profiles", ids.join(",")], enabled: !!cid && enabled && ids.length > 0,
     queryFn: async () => { const { data, error } = await supabase.from("profiles").select("id, full_name, display_name, status").in("id", ids); if (error) throw new Error(error.message); return (data ?? []) as Profile[]; },
+  });
+
+export const useLineups = (cid?: string) => useC<Lineup[]>(cid, "lineups", () => supabase.from("lineups").select("*").eq("competition_id", cid!));
+export const useAppearances = (cid?: string) => useC<Appearance[]>(cid, "appearances", () => supabase.from("player_appearances").select("*").eq("competition_id", cid!));
+export const useAmericanoEvents = (cid?: string) => useC<AmericanoEvent[]>(cid, "amer-events", () => supabase.from("americano_events").select("*").eq("competition_id", cid!).order("kind"));
+export const useAmericanoMatches = (cid?: string) => useC<AmericanoMatch[]>(cid, "amer-matches", () => supabase.from("americano_matches").select("*").eq("competition_id", cid!).order("round").order("court"));
+export const useAmericanoStandings = (cid?: string) => useC<AmericanoRow[]>(cid, "amer-standings", () => supabase.from("americano_standings").select("*").eq("competition_id", cid!).order("rank").order("name"));
+export const useAwards = (cid?: string) => useC<Award[]>(cid, "awards", () => supabase.from("awards").select("*").eq("competition_id", cid!).order("sort").order("created_at"));
+export const useWinners = (cid?: string) => useC<AwardWinner[]>(cid, "winners", () => supabase.from("award_winners").select("*").eq("competition_id", cid!).order("sort"));
+export const useNominees = (cid?: string) => useC<Nominee[]>(cid, "nominees", () => supabase.from("vote_nominees").select("*"));
+export const useMyVotes = (cid?: string) => useC<{ award_id: string; nominee_id: string }[]>(cid, "myvotes", () => supabase.from("award_votes").select("award_id, nominee_id"));
+export const useAudit = (cid?: string, limit = 50, enabled = true) => useC<AuditRow[]>(cid, "audit-" + limit, () => supabase.from("audit_log").select("*").eq("competition_id", cid!).order("id", { ascending: false }).limit(limit), enabled);
+export const useCompAdmins = (cid?: string, enabled = true) => useC<{ user_id: string; full_name: string | null; email: string }[]>(cid, "admins", () => supabase.rpc("list_competition_admins", { p_competition: cid }), enabled);
+export const useAdminUsers = (cid: string | undefined, all: boolean, enabled = true) =>
+  useQuery({
+    queryKey: ["c", cid, "users", all], enabled: enabled && (all || !!cid),
+    queryFn: async () => { const { data, error } = await supabase.rpc("list_users", all ? {} : { p_competition: cid }); if (error) throw new Error(error.message); return (data ?? []) as AdminUser[]; },
+  });
+export const usePrefs = (uid?: string) =>
+  useQuery({
+    queryKey: ["prefs", uid], enabled: !!uid,
+    queryFn: async () => { const { data, error } = await supabase.from("notification_prefs").select("results, fixtures, announcements, reveals").eq("user_id", uid!).maybeSingle(); if (error) throw new Error(error.message); return (data as Prefs | null) ?? { results: true, fixtures: true, announcements: true, reveals: true }; },
   });
 
 export const regName = (r: Registration, profiles: Profile[] | undefined) => {

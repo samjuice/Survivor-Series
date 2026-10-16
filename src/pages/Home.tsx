@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useComp } from "@/lib/comp";
 import { useMe } from "@/lib/me";
-import { useAction, useAnnouncements, useFeed, useFixtures, usePaymentInfo, usePrizePool, useResults, useTeams, teamById } from "@/lib/data";
+import { useAction, useAmericanoEvents, useAnnouncements, useAwards, useFeed, useFixtures, usePaymentInfo, usePrizePool, useResults, useStandings, useTeams, useWinners, teamById } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
-import { fmtDate, fmtDateTime, fmtRand, PHASE_LABEL } from "@/lib/format";
+import { fmtDate, fmtDateTime, fmtRand, ordinal, PHASE_LABEL } from "@/lib/format";
 import Topo from "@/components/Topo";
 import Pennant from "@/components/Pennant";
 import Countdown from "@/components/Countdown";
@@ -22,6 +22,8 @@ export default function Home() {
   const [confirmLeave, setConfirmLeave] = useState(false);
   const teams = useTeams(cid); const fixtures = useFixtures(cid); const results = useResults(cid);
   const anns = useAnnouncements(cid); const feed = useFeed(cid);
+  const standings = useStandings(cid);
+  const amer = useAmericanoEvents(cid); const awards = useAwards(cid); const winners = useWinners(cid);
   const hasReg = !!me.reg && ["pending", "approved", "waitlisted"].includes(me.reg.status);
   const pay = usePaymentInfo(cid, hasReg); const prize = usePrizePool(cid, me.reg?.status === "approved" || isAdmin);
 
@@ -39,6 +41,8 @@ export default function Home() {
   const pinned = (anns.data ?? []).slice(0, 4);
   const join = () => run("join", () => supabase.from("registrations").insert({ competition_id: comp.id, user_id: user!.id }), "You're on the list. An admin will confirm your place.");
   const leave = async () => { if (await run("leave", () => supabase.from("registrations").update({ status: "withdrawn" }).eq("id", me.reg!.id), "Registration withdrawn.")) setConfirmLeave(false); };
+  const rows = standings.data ?? []; const myRow = me.myTeam ? rows.find((r) => r.team_id === me.myTeam!.id) : undefined;
+  const top = rows.find((r) => r.rank === 1 && r.played > 0); const champion = comp.phase === "completed" && top && rows.filter((r) => r.rank === 1).length === 1 ? top : undefined;
   const revealedTeam = me.myTeam && (me.myTeam.revealed || isAdmin) ? me.myTeam : undefined;
 
   return (
@@ -49,7 +53,9 @@ export default function Home() {
           <div className="mb-5 flex flex-wrap items-center gap-2"><Pill tone={comp.phase === "completed" ? "gold" : "ok"}>{PHASE_LABEL[comp.phase]}</Pill>{comp.phase === "draft" && <Pill tone="warn">Only admins can see this</Pill>}</div>
           <h1 className="max-w-md text-5xl font-black leading-[.95]">{comp.name}</h1>
           {comp.completion_target && <p className="mt-3 text-sand/90">Finishing {fmtDate(comp.completion_target)}</p>}
+          {champion && <div className="mt-6 rounded-md border border-gold/60 bg-gold/10 px-4 py-3"><p className="text-sm text-sand/90">Champions of the series</p><p className="font-display text-3xl font-black text-gold">{champion.name}</p></div>}
           {revealedTeam && <div className="mt-8"><Pennant name={revealedTeam.name} color={revealedTeam.color} emblem={revealedTeam.emblem_key} /></div>}
+          {revealedTeam && myRow && myRow.played > 0 && (comp.show_table || isAdmin) && <p className="mt-4 text-lg">{myRow.is_tied ? "Level for " : "Currently "}<b className="font-display text-2xl">{ordinal(myRow.rank)}</b> with <b className="num font-display text-2xl">{myRow.points}</b> {myRow.points === 1 ? "point" : "points"}{myRow.is_tied ? ", tied on sets and games" : ""}.</p>}
           {target && <div className="mt-8"><Countdown to={target.to} label={target.label} /></div>}
           {prize.data != null && <p className="mt-6 text-sand/90">Prize pool <b className="num font-display text-2xl text-parchment">{fmtRand(prize.data)}</b></p>}
         </div>
@@ -97,6 +103,14 @@ export default function Home() {
               <p className="num mt-1 text-sand">{[...lastRes.result_sets].sort((a, b) => a.set_no - b.set_no).map((s) => `${s.a_games}-${s.b_games}`).join("   ")}</p></Link>
           </section>
         )}
+
+        {(((teams.data ?? []).some((t) => t.revealed)) || (amer.data?.length ?? 0) > 0 || (awards.data?.length ?? 0) > 0 || (winners.data ?? []).some((w) => w.published)) && (
+          <section className="space-y-2"><h2 className="text-2xl font-black">The series</h2>
+            <div className="flex flex-wrap gap-2">
+              {(teams.data ?? []).some((t) => t.revealed) && <Link to="/reveal" className="rounded-md bg-white/10 px-4 py-3 hover:bg-white/15">Tribe reveal</Link>}
+              {(amer.data?.length ?? 0) > 0 && <Link to="/americano" className="rounded-md bg-white/10 px-4 py-3 hover:bg-white/15">Americano</Link>}
+              {((awards.data?.length ?? 0) > 0 || (winners.data ?? []).some((w) => w.published)) && <Link to="/awards" className="rounded-md bg-white/10 px-4 py-3 hover:bg-white/15">{(awards.data ?? []).some((a) => a.voting_open) ? "Awards: vote now" : "Awards"}</Link>}
+            </div></section>)}
 
         {pinned.length > 0 && (
           <section className="space-y-3"><h2 className="text-2xl font-black">Announcements</h2>

@@ -7,7 +7,7 @@ import ScoreForm from "./ScoreForm";
 import type { Fixture, Team } from "@/types";
 
 const fx: Fixture = { id: "f1", competition_id: "c1", round: 1, team_a: "a", team_b: "b", scheduled_at: null, status: "scheduled" };
-const A: Team = { id: "a", competition_id: "c1", name: "Fang", emblem_key: "fang", color: null, status: "active", revealed: true };
+const A: Team = { id: "a", competition_id: "c1", name: "Fang", emblem_key: "fang", color: null, status: "active", revealed: true, revealed_at: null };
 const B: Team = { ...A, id: "b", name: "Leaf" };
 const show = (admin = false) => render(<Wrap><ScoreForm fixture={fx} teamA={A} teamB={B} isAdmin={admin} /></Wrap>);
 const set = (i: number, side: "Fang" | "Leaf", v: string) => fireEvent.change(screen.getByLabelText(`Set ${i}, ${side} games`), { target: { value: v } });

@@ -14,6 +14,10 @@ export function feedText(e: FeedEvent): string {
       return p.walkover ? `${s(p.winner)} won ${s(p.team_a)} v ${s(p.team_b)} by walkover.` : `${s(p.winner)} won ${s(p.team_a)} v ${s(p.team_b)} (${line}).`;
     }
     case "announcement": return `New announcement: ${s(p.title)}`;
+    case "tribe_revealed": return `${s(p.name)} has been revealed.`;
+    case "fixtures_regenerated": return `Fixtures were rebuilt: ${s(p.kept)} played matches kept, ${s(p.created)} new matches added.`;
+    case "americano_completed": return `The ${s(p.kind) === "finale" ? "closing" : "opening"} Americano is complete${p.winner ? `. ${s(p.winner)} finished on top` : ""}.`;
+    case "awards_published": return `The awards have been announced.`;
     case "team_withdrawn": return `${s(p.team)} withdrew. Their unplayed matches go to the opponents.`;
     default: return "Something happened in the series.";
   }

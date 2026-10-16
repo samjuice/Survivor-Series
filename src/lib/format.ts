@@ -15,3 +15,4 @@ export function countdown(to: Date, now: Date) {
 export const PHASE_LABEL: Record<string, string> = {
   draft: "Not open yet", registration: "Registration open", opening: "Opening Americano", tribal: "Tribal matches", finale: "Finale", completed: "Completed",
 };
+export const ordinal = (n: number) => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };

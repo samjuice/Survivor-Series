@@ -1,7 +1,8 @@
 import { NavLink, Outlet, Link } from "react-router-dom";
-import { CalendarDays, Flag, Home, Trophy, UserRound, Settings2 } from "lucide-react";
+import { Award, CalendarDays, Flag, Home, Shuffle, Sparkles, Trophy, UserRound, Settings2 } from "lucide-react";
 import { useComp } from "@/lib/comp";
 import { useRealtime } from "@/lib/realtime";
+import { useLiveToasts } from "@/lib/live";
 import { Loading } from "./ui";
 
 const TABS = [
@@ -11,12 +12,16 @@ const TABS = [
 export default function Shell() {
   const { comp, competitions, setCompId, isAdmin, loading } = useComp();
   useRealtime(comp?.id);
+  useLiveToasts(comp?.id);
   const link = ({ isActive }: { isActive: boolean }) => `flex flex-1 flex-col items-center gap-0.5 py-2 text-xs md:flex-none md:flex-row md:gap-3 md:rounded-md md:px-3 md:py-2.5 md:text-sm ${isActive ? "text-parchment md:bg-white/10" : "text-sand/70 hover:text-parchment"}`;
   return (
     <div className="min-h-dvh md:pl-56">
       <nav aria-label="Main" className="safe-b fixed inset-x-0 bottom-0 z-40 flex border-t border-white/10 bg-night/95 backdrop-blur md:inset-y-0 md:right-auto md:w-56 md:flex-col md:border-r md:border-t-0 md:px-3 md:pt-6">
         <p className="mb-4 hidden px-3 font-display text-2xl font-black md:block">Padel Survivor</p>
         {TABS.map(({ to, label, Icon, end }) => <NavLink key={to} to={to} end={end} className={link}><Icon className="h-5 w-5" aria-hidden />{label}</NavLink>)}
+        <div className="hidden md:block md:mt-4 md:border-t md:border-white/10 md:pt-3">
+          {[["/reveal", "Reveal", Sparkles], ["/americano", "Americano", Shuffle], ["/awards", "Awards", Award]].map(([to, label, Icon]) => { const I = Icon as typeof Sparkles; return <NavLink key={to as string} to={to as string} className={link}><I className="h-5 w-5" aria-hidden />{label as string}</NavLink>; })}
+        </div>
         {isAdmin && <NavLink to="/admin" className={link}><Settings2 className="h-5 w-5" aria-hidden />Admin</NavLink>}
       </nav>
       <div className="mx-auto max-w-2xl px-4 pb-28 md:pb-12">

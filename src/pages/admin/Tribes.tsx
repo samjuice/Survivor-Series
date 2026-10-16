@@ -4,6 +4,7 @@ import { regName, useAction, useMembers, useProfiles, useRegistrations, useTeams
 import { supabase } from "@/lib/supabase";
 import { Emblem, EMBLEM_KEYS, TRIBE_COLORS, tribeColor } from "@/components/Emblems";
 import { TeamBadge } from "@/components/TeamBadge";
+import RandomAssign from "./RandomAssign";
 import { Button, Confirm, Empty, ErrorState, Field, Loading, Modal, Pill, Stripe, inputCls } from "@/components/ui";
 import type { Registration, Team, TeamMember } from "@/types";
 
@@ -46,8 +47,13 @@ export default function Tribes() {
         <Button type="submit" busy={busy === "create"} reason={!name.trim() ? "Give the tribe a name." : undefined}>Create tribe</Button>
       </form>
 
+      <RandomAssign comp={comp} teams={teams.data ?? []} regs={regs.data ?? []} active={active} nameOf={(r) => nm(r)} run={run} busy={busy} />
+
       <section className="space-y-1"><h2 className="text-2xl font-black">Tribes</h2>
         <p className="text-sm text-sand/80">{free.length} approved {free.length === 1 ? "player isn't" : "players aren't"} on a tribe. Players only see a tribe after you reveal it.</p>
+        {(teams.data ?? []).length > 0 && <div className="flex flex-wrap gap-2 pt-2">
+          <Button variant="ghost" busy={busy === "caps"} onClick={async () => { const { data, error } = await supabase.rpc("randomize_captains", { p_competition: comp.id }); if (error) { await run("caps", async () => ({ error })); return; } await run("caps", async () => ({ error: null }), data ? `${data} captains picked at random.` : "Every tribe already has a captain."); }}>Pick random captains</Button>
+          <Button variant="ghost" busy={busy === "next"} reason={(teams.data ?? []).every((x) => x.revealed || x.status !== "active") ? "Every tribe is already revealed." : undefined} onClick={() => { const nx = (teams.data ?? []).find((x) => !x.revealed && x.status === "active"); if (nx) run("next", () => supabase.from("teams").update({ revealed: true }).eq("id", nx.id), `${nx.name} revealed.`); }}>Reveal the next tribe</Button></div>}
         {(teams.data ?? []).length > 1 && <div className="pt-2"><Button variant="ghost" busy={busy === "revall"} onClick={() => run("revall", () => supabase.from("teams").update({ revealed: true }).eq("competition_id", comp.id), "All tribes revealed.")}>Reveal all tribes</Button></div>}
       </section>
       {(teams.data ?? []).length === 0 ? <Empty title="No tribes yet">Create the first one above.</Empty> : (

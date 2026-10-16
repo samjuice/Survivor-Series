@@ -1,9 +1,9 @@
 import { Emblem, tribeColor } from "./Emblems";
 // The hanging tribe pennant: the one memorable element on the home screen.
-export default function Pennant({ name, color, emblem, animate = true }: { name: string; color: string | null; emblem: string | null; animate?: boolean }) {
+export default function Pennant({ name, color, emblem, animate = true, delay = 0 }: { name: string; color: string | null; emblem: string | null; animate?: boolean; delay?: number }) {
   const c = tribeColor(color);
   return (
-    <div className={`relative mx-auto w-44 ${animate ? "pennant-drop" : ""}`} role="img" aria-label={`${name} tribe pennant`}>
+    <div className={`relative mx-auto w-44 ${animate ? "pennant-drop" : ""}`} style={animate && delay ? { animationDelay: `${delay}s` } : undefined} role="img" aria-label={`${name} tribe pennant`}>
       <svg viewBox="0 0 160 250" className="w-full drop-shadow-[0_10px_18px_rgba(0,0,0,.45)]">
         <defs><linearGradient id="pshade" x1="0" x2="1"><stop offset="0" stopColor="#000" stopOpacity=".3" /><stop offset=".5" stopColor="#000" stopOpacity="0" /><stop offset="1" stopColor="#000" stopOpacity=".22" /></linearGradient></defs>
         <rect x="6" y="6" width="148" height="7" rx="3.5" fill="#cdbf9a" />

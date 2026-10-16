@@ -5,7 +5,7 @@ import { Empty, PageTitle } from "@/components/ui";
 export default function AdminLayout() {
   const { isAdmin, isOwner, comp } = useComp();
   if (!isAdmin && !isOwner) return <div className="pt-12"><Empty title="Admins only">You don't have admin access to this competition.</Empty></div>;
-  const tabs = [["", "Overview"], ["registrations", "Registrations"], ["tribes", "Tribes"], ["fixtures", "Fixtures"], ["results", "Results"], ["announcements", "Announcements"], ["settings", "Settings"], ...(isOwner ? [["competitions", "Competitions"]] : [])];
+  const tabs = [["", "Overview"], ["registrations", "Registrations"], ["tribes", "Tribes"], ["fixtures", "Fixtures"], ["results", "Results"], ["americano", "Americano"], ["awards", "Awards"], ["announcements", "Announcements"], ["users", "Users"], ["audit", "Audit log"], ["exports", "Exports"], ["settings", "Settings"], ...(isOwner ? [["competitions", "Competitions"]] : [])];
   return (
     <div>
       <PageTitle sub={comp?.name ?? "No competition selected"}>Admin</PageTitle>

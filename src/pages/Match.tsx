@@ -5,6 +5,7 @@ import { useFixtures, useResults, useTeams, teamById } from "@/lib/data";
 import { fmtDateTime } from "@/lib/format";
 import { TeamBadge } from "@/components/TeamBadge";
 import ScoreForm from "@/components/ScoreForm";
+import LineupPanel from "@/components/LineupPanel";
 import { Banner, Empty, ErrorState, Loading, Pill } from "@/components/ui";
 
 export default function MatchPage() {
@@ -30,6 +31,8 @@ export default function MatchPage() {
       <header className="mt-2 space-y-3"><p className="text-sand/80">Round {f.round}</p>
         <div className="space-y-2"><TeamBadge team={a} size="lg" /><p className="pl-2 text-sand/70">versus</p><TeamBadge team={b} size="lg" /></div>
         <p className="text-sand/90">{f.scheduled_at ? fmtDateTime(f.scheduled_at) : "Time to be confirmed"}</p></header>
+
+      {(myTeamIn || isAdmin || f.status !== "scheduled" || comp.show_fixtures) && <LineupPanel fixture={f} a={a} b={b} myTeamId={me.myTeam?.id} isCaptain={me.isCaptain} isAdmin={isAdmin} phaseOk={phaseOk} />}
 
       {res && (
         <section className="mt-6 rounded-md bg-white/5 p-4"><div className="flex flex-wrap items-center gap-2"><h2 className="text-2xl font-black">{res.status === "approved" ? `${teamById(teams.data, res.winner_team)?.name} won` : res.status === "pending" ? "Result awaiting approval" : "Result rejected"}</h2>{res.walkover && <Pill tone="warn">Walkover</Pill>}</div>

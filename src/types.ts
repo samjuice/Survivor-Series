@@ -10,7 +10,7 @@ export interface Registration {
   id: string; competition_id: string; user_id: string | null; placeholder_name: string | null;
   status: RegStatus; payment_status: "unpaid" | "paid"; paid_at: string | null; created_at: string;
 }
-export interface Team { id: string; competition_id: string; name: string; emblem_key: string | null; color: string | null; status: "active" | "withdrawn"; revealed: boolean; }
+export interface Team { id: string; competition_id: string; name: string; emblem_key: string | null; color: string | null; status: "active" | "withdrawn"; revealed: boolean; revealed_at: string | null; }
 export interface TeamMember { id: string; team_id: string; registration_id: string; is_captain: boolean; joined_at: string; left_at: string | null; }
 export interface Fixture { id: string; competition_id: string; round: number; team_a: string; team_b: string; scheduled_at: string | null; status: "scheduled" | "played" | "walkover" | "cancelled"; }
 export interface ResultSet { set_no: number; a_games: number; b_games: number; }
@@ -26,3 +26,14 @@ export interface RosterRow { team_id: string; competition_id: string; registrati
 export interface Announcement { id: string; competition_id: string; title: string; body: string; pinned: boolean; created_at: string; }
 export interface FeedEvent { id: number; competition_id: string; kind: string; payload: Record<string, unknown>; created_at: string; }
 export interface Roles { is_owner: boolean; admin_of: string[]; }
+export interface Lineup { competition_id: string; fixture_id: string; team_id: string; reg1: string; reg2: string; locked: boolean; updated_at: string; }
+export interface Appearance { competition_id: string; team_id: string; registration_id: string; name: string; played: number; upcoming: number; }
+export interface AmericanoEvent { id: string; competition_id: string; kind: "opening" | "finale"; name: string; points_per_match: number; status: "draft" | "live" | "completed"; }
+export interface AmericanoMatch { id: string; event_id: string; round: number; court: number; a1: string; a2: string; b1: string; b2: string; score_a: number | null; score_b: number | null; status: "scheduled" | "played"; }
+export interface AmericanoRow { competition_id: string; event_id: string; kind: "opening" | "finale"; registration_id: string; name: string; team_id: string | null; played: number; wins: number; pts_for: number; pts_against: number; diff: number; rank: number; }
+export interface Award { id: string; competition_id: string; title: string; description: string; nominee_kind: "player" | "tribe"; voting_open: boolean; sort: number; }
+export interface AwardWinner { award_id: string; competition_id: string; title: string; description: string; nominee_kind: "player" | "tribe"; sort: number; winner_id: string; published: boolean; winner_name: string | null; emblem_key: string | null; color: string | null; }
+export interface Nominee { award_id: string; nominee_kind: "player" | "tribe"; nominee_id: string; name: string; emblem_key: string | null; color: string | null; }
+export interface AuditRow { id: number; competition_id: string | null; actor: string | null; actor_name: string | null; action: string; entity: string; entity_id: string | null; details: Record<string, unknown>; created_at: string; }
+export interface AdminUser { user_id: string; full_name: string; display_name: string | null; email: string; status: "active" | "suspended" | "deleted"; created_at: string; registrations: number; is_owner: boolean; }
+export interface Prefs { results: boolean; fixtures: boolean; announcements: boolean; reveals: boolean; }

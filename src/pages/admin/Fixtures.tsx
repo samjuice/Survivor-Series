@@ -15,7 +15,7 @@ function SchedRow({ f, onSave, busy }: { f: Fixture; onSave: (iso: string | null
 export default function Fixtures() {
   const { comp } = useComp(); const cid = comp?.id; const { run, busy } = useAction(cid);
   const fx = useFixtures(cid); const teams = useTeams(cid); const results = useResults(cid);
-  const [gen, setGen] = useState(false); const [wo, setWo] = useState<Fixture | null>(null); const [winner, setWinner] = useState("");
+  const [gen, setGen] = useState(false); const [regen, setRegen] = useState(false); const [wo, setWo] = useState<Fixture | null>(null); const [winner, setWinner] = useState("");
   if (!comp) return <Empty title="No competition yet" />;
   if (fx.isLoading || teams.isLoading) return <Loading />;
   if (fx.error) return <ErrorState error={fx.error} retry={() => fx.refetch()} />;
@@ -28,6 +28,8 @@ export default function Fixtures() {
       <section className="space-y-3"><h2 className="text-2xl font-black">Round robin</h2>
         <p className="text-sand/90">Every tribe plays every other tribe once. With {n} tribes that's {matches} matches over {rounds} rounds.</p>
         <Button busy={busy === "gen"} reason={list.length > 0 ? "Fixtures already exist. Regenerating while keeping approved scores arrives in Stage 2." : n < 2 ? "You need at least 2 active tribes." : undefined} onClick={() => setGen(true)}>Generate fixtures</Button>
+        <div className="space-y-1 pt-1"><Button variant="ghost" reason={list.length === 0 ? "Generate fixtures first." : undefined} onClick={() => setRegen(true)}>Regenerate unplayed fixtures</Button>
+          <p className="text-xs text-sand/70">Use this after adding or withdrawing a tribe. Played matches and approved scores are never touched.</p></div>
         <div className="flex flex-wrap items-center gap-3 pt-1"><Pill tone={comp.show_fixtures ? "ok" : "warn"}>{comp.show_fixtures ? "Visible to players" : "Hidden from players"}</Pill>
           <Button variant="ghost" busy={busy === "vis"} onClick={() => run("vis", () => supabase.from("competitions").update({ show_fixtures: !comp.show_fixtures }).eq("id", comp.id), comp.show_fixtures ? "Fixtures hidden." : "Fixtures published to players.")}>{comp.show_fixtures ? "Hide from players" : "Publish to players"}</Button></div>
       </section>
@@ -42,6 +44,9 @@ export default function Fixtures() {
             </div>); })}</section>))}
       <Confirm open={gen} title="Generate fixtures?" body={<>This creates {matches} matches over {rounds} rounds for the {n} active tribes. You can't regenerate them in Stage 1, so check the tribes first.</>} confirmLabel="Generate fixtures" busy={busy === "gen"}
         onClose={() => setGen(false)} onConfirm={async () => { if (await run("gen", () => supabase.rpc("generate_fixtures", { p_competition: comp.id }), "Fixtures generated.")) setGen(false); }} />
+      <Confirm open={regen} title="Regenerate the unplayed fixtures?" busy={busy === "regen"} confirmLabel="Regenerate" danger onClose={() => setRegen(false)}
+        body={<><p><b>{list.filter((x) => x.status === "played" || x.status === "walkover").length} played matches</b> and their approved scores stay exactly as they are.</p><p className="mt-2"><b>{list.filter((x) => x.status === "scheduled" || x.status === "cancelled").length} unplayed matches</b> are rebuilt, including any times you set and any pending results or line-ups on them. Missing pairings are added.</p></>}
+        onConfirm={async () => { if (await run("regen", () => supabase.rpc("regenerate_fixtures", { p_competition: comp.id, p_confirm: true }), "Unplayed fixtures regenerated.")) setRegen(false); }} />
       <Modal open={!!wo} onClose={() => setWo(null)} title="Record a walkover">
         <Banner tone="warn">The winner gets 6-0, 6-0, 6-0, labelled Walkover, and the result counts straight away. This can't be undone here.</Banner>
         <fieldset className="mt-4 space-y-2"><legend className="mb-1 text-sm font-medium text-sand">Who wins?</legend>
