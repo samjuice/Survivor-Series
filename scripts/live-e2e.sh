@@ -3,17 +3,20 @@
 # Creates a throwaway owner + player + competition, exercises the flows over HTTP, then deletes everything it created.
 set -uo pipefail
 : "${DB_URL:?}"; URL=$(grep '^VITE_SUPABASE_URL=' .env.production | cut -d= -f2-); KEY=$(grep '^VITE_SUPABASE_ANON_KEY=' .env.production | cut -d= -f2-)
-RUN="ci$(date +%s)"; PW="Aa1-$(openssl rand -hex 10)"
+RUN="ci$(date +%s)"; LEFT=unknown; PW="Aa1-$(openssl rand -hex 10)"
 OWN=$(cat /proc/sys/kernel/random/uuid); PLY=$(cat /proc/sys/kernel/random/uuid); PL2=$(cat /proc/sys/kernel/random/uuid)
 pass=0; failn=0
 q() { psql "$DB_URL" -Atq -v ON_ERROR_STOP=1 "$@"; }
-cleanup() {
-  q -c "delete from public.competitions where slug like '${RUN}%'" >/dev/null 2>&1
-  q -c "delete from public.audit_log where actor in ('$OWN','$PLY','$PL2')" >/dev/null 2>&1
-  q -c "delete from public.platform_owners where user_id = '$OWN'; delete from public.notification_prefs where user_id in ('$OWN','$PLY','$PL2'); delete from public.profiles where id in ('$OWN','$PLY','$PL2'); delete from auth.users where id in ('$OWN','$PLY','$PL2')" >/dev/null 2>&1
-  left=$(q -c "select (select count(*) from auth.users where id in ('$OWN','$PLY','$PL2')) + (select count(*) from public.competitions where slug like '${RUN}%')" 2>/dev/null)
-  echo "cleanup: leftover rows = ${left:-unknown}"
+purge() {   # $1 = competition slug pattern, $2 = user email pattern
+  q -c "update public.competitions set phase = 'draft', show_table = false, show_fixtures = false where slug ~ '$1'" >/dev/null 2>&1
+  q -c "delete from public.competitions where slug ~ '$1'" >/dev/null 2>&1
+  q -c "delete from public.audit_log where actor in (select id from auth.users where email like '$2')" >/dev/null 2>&1
+  q -c "delete from public.platform_owners where user_id in (select id from auth.users where email like '$2')" >/dev/null 2>&1
+  q -c "delete from public.notification_prefs where user_id in (select id from auth.users where email like '$2'); delete from public.profiles where id in (select id from auth.users where email like '$2'); delete from auth.users where email like '$2'" >/dev/null 2>&1
 }
+leftover() { q -c "select (select count(*) from auth.users where email like 'ci%@ci.invalid') + (select count(*) from public.competitions where slug ~ '^ci[0-9]{10}')" 2>/dev/null; }
+cleanup() { purge '^ci[0-9]{10}' 'ci%@ci.invalid'; left=$(leftover); echo "cleanup: leftover rows = ${left:-unknown}"; LEFT=${left:-unknown}; }
+purge '^ci[0-9]{10}' 'ci%@ci.invalid'   # remove anything an earlier interrupted run left behind
 trap cleanup EXIT
 ok()   { echo "pass  $1"; pass=$((pass+1)); }
 bad()  { echo "FAIL  $1 :: $2"; failn=$((failn+1)); }
@@ -92,5 +95,7 @@ api "$OT" POST /rest/v1/payment_info "{\"competition_id\":\"$CID\",\"instruction
 api "$PT" GET "/rest/v1/payment_info?select=instructions"; [[ "$BODY" == *"CI bank details 999"* ]] && ok "a registered player can read the instructions" || bad "payment info for registrant" "$BODY"
 api "$OT" GET "/rest/v1/audit_log?competition_id=eq.$CID&select=details"; [[ "$BODY" != *"bank details 999"* ]] && ok "bank details never reach the audit log" || bad "audit leaked bank details" "leak"
 api "$PT" PUT /rest/v1/notification_prefs "{\"user_id\":\"$PLY\",\"results\":false}"; [[ "$CODE" =~ ^2 ]] && ok "a player saves their notification preferences" || { api "$PT" POST "/rest/v1/notification_prefs?on_conflict=user_id" "{\"user_id\":\"$PLY\",\"results\":false}"; expect2 "a player saves their notification preferences"; }
+cleanup
+[[ "$LEFT" == "0" ]] && ok "all test data was removed again (0 rows left)" || bad "cleanup" "leftover rows: $LEFT"
 echo "---- e2e: $pass passed, $failn failed"
 [[ $failn -eq 0 ]]
