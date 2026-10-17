@@ -32,7 +32,7 @@ export default function Users() {
         {users.isLoading ? <Loading /> : users.error ? <ErrorState error={users.error} retry={() => users.refetch()} /> : list.length === 0 ? <Empty title="No users found" /> : (
           <ul className="space-y-2">{list.slice(0, limit).map((u) => (
             <li key={u.user_id} className="rounded-md bg-white/[.05] p-3.5">
-              <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="font-semibold">{u.full_name}{u.display_name ? ` (${u.display_name})` : ""}</p><p className="text-sm text-sand/80">{u.email}</p><p className="text-xs text-sand/60">Joined {fmtShortDate(u.created_at)}, {u.registrations} {u.registrations === 1 ? "registration" : "registrations"}</p></div>
+              <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="font-semibold">{u.full_name}{u.display_name ? ` (${u.display_name})` : ""}</p><p className="text-sm text-sand/80">{u.email}</p><p className="text-xs text-sand/70">Joined {fmtShortDate(u.created_at)}, {u.registrations} {u.registrations === 1 ? "registration" : "registrations"}</p></div>
                 <div className="flex gap-1.5">{u.is_owner && <Pill tone="gold">Owner</Pill>}<Pill tone={u.status === "active" ? "ok" : u.status === "suspended" ? "warn" : "bad"}>{u.status}</Pill></div></div>
               {u.status !== "deleted" && <div className="mt-3 flex flex-wrap gap-2">
                 {u.status === "suspended" ? <Button variant="ghost" busy={busy === "s" + u.user_id} reason={why(u)} onClick={() => setStatus(u, "active")}>Restore access</Button>

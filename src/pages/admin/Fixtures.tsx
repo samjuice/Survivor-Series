@@ -37,7 +37,7 @@ export default function Fixtures() {
         <section key={r} className="space-y-2"><h3 className="text-2xl font-black">Round {r}</h3>
           {list.filter((f) => f.round === r).map((f) => { const res = resFor(f.id); return (
             <div key={f.id} className="space-y-3 rounded-md bg-white/[.05] p-3.5">
-              <div className="flex flex-wrap items-center justify-between gap-2"><span className="flex flex-wrap items-center gap-3"><TeamBadge team={teamById(teams.data, f.team_a)} size="sm" /><span className="text-sand/60">v</span><TeamBadge team={teamById(teams.data, f.team_b)} size="sm" /></span>
+              <div className="flex flex-wrap items-center justify-between gap-2"><span className="flex flex-wrap items-center gap-3"><TeamBadge team={teamById(teams.data, f.team_a)} size="sm" /><span className="text-sand/70">v</span><TeamBadge team={teamById(teams.data, f.team_b)} size="sm" /></span>
                 <Pill tone={f.status === "played" ? "ok" : f.status === "walkover" ? "warn" : f.status === "cancelled" ? "bad" : "plain"}>{f.status}</Pill></div>
               {f.status === "scheduled" && <><SchedRow f={f} busy={busy === "t" + f.id} onSave={(iso) => run("t" + f.id, () => supabase.from("fixtures").update({ scheduled_at: iso }).eq("id", f.id), "Match time saved.")} />
                 <Button variant="ghost" reason={res?.status === "approved" ? "Already has an approved result." : undefined} onClick={() => { setWo(f); setWinner(""); }}>Record a walkover</Button></>}

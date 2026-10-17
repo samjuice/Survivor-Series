@@ -30,7 +30,7 @@ export default function FixturesPage() {
                 const sets = approved ? [...res.result_sets].sort((x, y) => x.set_no - y.set_no) : [];
                 return (
                   <li key={f.id}><Link to={`/match/${f.id}`} className="block rounded-md bg-white/[.05] p-3.5 hover:bg-white/10">
-                    <div className="flex items-center justify-between gap-2"><TeamBadge team={a} size="sm" dim={approved && res.winner_team !== f.team_a} /><span className="text-xs text-sand/60">v</span><TeamBadge team={b} size="sm" dim={approved && res.winner_team !== f.team_b} /></div>
+                    <div className="flex items-center justify-between gap-2"><TeamBadge team={a} size="sm" dim={approved && res.winner_team !== f.team_a} /><span className="text-xs text-sand/70">v</span><TeamBadge team={b} size="sm" dim={approved && res.winner_team !== f.team_b} /></div>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-sand/90">
                       {approved ? <span className="num">{sets.map((s) => `${s.a_games}-${s.b_games}`).join("   ")}</span> : <span>{f.scheduled_at ? fmtDateTime(f.scheduled_at) : "Time to be confirmed"}</span>}
                       {res?.walkover && approved && <Pill tone="warn">Walkover</Pill>}

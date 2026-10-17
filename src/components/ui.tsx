@@ -58,7 +58,7 @@ export function Field({ label, hint, error, children }: { label: string; hint?: 
     </div>
   );
 }
-export const inputCls = "min-h-11 w-full rounded-md border border-sand/30 bg-night/60 px-3 text-parchment placeholder:text-sand/40 focus:border-sand";
+export const inputCls = "min-h-11 w-full rounded-md border border-sand/30 bg-night/60 px-3 text-parchment placeholder:text-sand/70 focus:border-sand";
 
 export function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
