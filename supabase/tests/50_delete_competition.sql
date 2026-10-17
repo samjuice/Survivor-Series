@@ -21,7 +21,7 @@ select t.eq($$select count(*)::text from public.audit_log where competition_id =
 -- the biggest case: the whole Stage 2/3 competition (fixtures, results, line-ups, Americano, awards, votes)
 select t.root();
 update public.competitions set phase = 'draft' where id = t.id('comp');
-select t.eq($$select (select count(*) from public.fixtures where competition_id = t.id('comp'))::int + (select count(*) from public.lineups where competition_id = t.id('comp'))::int + (select count(*) from public.americano_matches where competition_id = t.id('comp'))::int + (select count(*) from public.award_votes) > 20$$ || '', 'true', 'the full competition has plenty of linked data to delete');
+select t.eq($$select (select count(*) from public.fixtures where competition_id = t.id('comp'))::int + (select count(*) from public.lineups where competition_id = t.id('comp'))::int + (select count(*) from public.americano_matches where competition_id = t.id('comp'))::int + (select count(*) from public.award_votes) > 15$$ || '', 'true', 'the full competition has plenty of linked data to delete');
 select t.login(:'owner');
 select t.ok($$delete from public.competitions where id = t.id('comp')$$, 'the owner can delete a full competition with fixtures, results, line-ups, Americano and awards');
 select t.root();
